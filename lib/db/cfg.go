@@ -23,10 +23,6 @@ type Type string
 
 const (
 	SQLite Type = "sqlite"
-
-	//MySQL  Type = "mysql"
-	//PgSql  Type = "postgresql"
-	//TiDB   Type = "tidb"
 )
 
 func (customDbType Type) dialector(dsn string) gorm.Dialector {

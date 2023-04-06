@@ -27,7 +27,7 @@ type DB struct {
 }
 
 func (customDB *DB) Init(cfg *Cfg) error {
-	if customDB.ptrGormDB == nil && customDB.ptrSqlDB == nil {
+	if customDB.ptrGormDB != nil && customDB.ptrSqlDB != nil {
 		return nil
 	}
 
@@ -62,11 +62,13 @@ func (customDB *DB) initGormDB() error {
 	if err != nil {
 		return err
 	}
+	if tmpDb == nil {
+		return ErrorDBTypeNotSupported
+	}
 	tmpSqlDb, err := tmpDb.DB()
 	if err != nil {
 		return err
 	}
-
 	customDB.ptrGormDB = tmpDb
 	customDB.ptrSqlDB = tmpSqlDb
 	return nil

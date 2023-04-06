@@ -1,3 +1,8 @@
+// Package single_file
+/**
+ * 独立文件数据存储
+ * @todo 未针对文件名称进行存在性检测
+ */
 package single_file
 
 import (

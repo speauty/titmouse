@@ -25,3 +25,7 @@ type TaskRepository struct {
 func (customTR TaskRepository) ActionTaskPusher(task *model.TaskModel) {
 	// @todo 待完成
 }
+
+func (customTR TaskRepository) ActionQueryTask(task *model.TaskModel) {
+	// @todo 待完成
+}

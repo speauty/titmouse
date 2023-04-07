@@ -1,0 +1,1 @@
+rsrc -manifest titmouse.manifest -ico favicon.ico -o rsrc.syso

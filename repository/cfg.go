@@ -27,6 +27,7 @@ type CfgRepository struct {
 
 // ActionGetGraphics 获取显卡集合
 func (customCR CfgRepository) ActionGetGraphics() []string {
+	_ = customCR.whisperClient.LoadGraphics()
 	return customCR.whisperClient.Graphics()
 }
 

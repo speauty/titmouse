@@ -1,0 +1,1 @@
+go build "-ldflags=-w -s -H=windowsgui" -o .\bin\titmouse.exe titmouse&& upx -9 .\bin\titmouse.exe

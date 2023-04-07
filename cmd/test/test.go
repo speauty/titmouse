@@ -24,7 +24,6 @@ func main() {
 
 	cron.ApiWhisperCron().Push(&model.TaskModel{
 		Id:            "",
-		SeqNo:         0,
 		NumThreads:    8,
 		NumProcessors: 4,
 		PathModel:     "E:\\下载\\whisper\\ggml-tiny.bin",

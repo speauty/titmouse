@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"syscall"
 	"titmouse/lib/log"
 )
 
@@ -68,6 +69,7 @@ func (customW *Whisper) LoadGraphics() error {
 	}
 
 	currentCMD := exec.Command(customW.cfg.CmdPath, "-la")
+	currentCMD.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	currentStdout, err := currentCMD.StdoutPipe()
 	if err != nil {
 		customW.log().Errorf("绑定标准输出失败, 错误: %s, 指令: %s", err, currentCMD.String())
@@ -132,8 +134,11 @@ func (customW *Whisper) Transform(param *TransformParams) error {
 	args = append(args, "-f", param.PathAudioFile)
 
 	currentCMD := exec.Command(customW.cfg.CmdPath, args...)
+	currentCMD.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	var stderr bytes.Buffer
+	var stdout bytes.Buffer
 	currentCMD.Stderr = &stderr
+	currentCMD.Stdout = &stdout
 
 	if err := currentCMD.Start(); err != nil {
 		customW.log().Errorf("转换失败, 错误: %s, 指令: %s", err, currentCMD.String())
@@ -141,7 +146,6 @@ func (customW *Whisper) Transform(param *TransformParams) error {
 	}
 
 	if err := currentCMD.Wait(); err != nil {
-		fmt.Println(err)
 		customW.log().Errorf("转换失败, 错误: %s(%s), 指令: %s", err, stderr.String(), currentCMD.String())
 	}
 	return nil

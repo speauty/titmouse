@@ -8,7 +8,6 @@ import (
 
 type TaskModel struct {
 	Id             string
-	SeqNo          int    // 任务序号
 	NumThreads     int    // 线程数量
 	NumProcessors  int    // 处理器数量
 	GraphicAdapter string // 显卡
@@ -19,9 +18,9 @@ type TaskModel struct {
 
 func (customTM *TaskModel) String() string {
 	return fmt.Sprintf(
-		"编号: %s, 序号: %d, 线程数: %d, 处理器数: %d, 显卡: %s, 模型: %s, 音视频文件: %s",
-		customTM.Id, customTM.SeqNo, customTM.NumThreads, customTM.NumProcessors,
-		customTM.GraphicAdapter, customTM.PathModel, customTM.PathAudioFile,
+		"编号: %s, 音视频文件: %s, 线程数: %d, 处理器数: %d, 显卡: %s, 模型: %s, 语言: %s",
+		customTM.Id, customTM.PathAudioFile, customTM.NumThreads, customTM.NumProcessors,
+		customTM.GraphicAdapter, customTM.PathModel, customTM.Language,
 	)
 }
 

@@ -119,7 +119,7 @@ func (customW *Whisper) Transform(param *TransformParams) error {
 	var args []string
 	args = append(args, "-osrt")
 	if param.GraphicAdapter != "" {
-		args = append(args, "-gpu", param.GraphicAdapter)
+		args = append(args, "-gpu", fmt.Sprintf("\"%s\"", param.GraphicAdapter))
 	}
 	if param.NumThreads > 0 {
 		args = append(args, "-t", fmt.Sprintf("%d", param.NumThreads))
@@ -139,7 +139,9 @@ func (customW *Whisper) Transform(param *TransformParams) error {
 		customW.log().Errorf("转换失败, 错误: %s, 指令: %s", err, currentCMD.String())
 		return err
 	}
+
 	if err := currentCMD.Wait(); err != nil {
+		fmt.Println(err)
 		customW.log().Errorf("转换失败, 错误: %s(%s), 指令: %s", err, stderr.String(), currentCMD.String())
 	}
 	return nil

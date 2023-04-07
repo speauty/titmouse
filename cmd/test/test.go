@@ -30,6 +30,6 @@ func main() {
 		PathModel:     "E:\\下载\\whisper\\ggml-tiny.bin",
 		PathAudioFile: "E:\\工作空间\\搬运翻译\\ChernoOpenGL\\26.创建纹理测试.mp4",
 	})
-	fmt.Println(cron.ApiWhisperCron().GetCntListInMemory())
+	fmt.Println(cron.ApiWhisperCron().GetCntWait())
 	nohup.NewResident(ctx, cron.ApiWhisperCron())
 }

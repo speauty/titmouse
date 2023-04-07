@@ -162,6 +162,9 @@ func (customWC *WhisperCron) jobTransform() {
 					if err := apiWhisper.Transform(currentTransform.toWhisperTransformParams()); err != nil {
 						currentLog.Errorf("%s, 数据[%s]", currentTransform.data.String(), err)
 						chanMsg <- fmt.Sprintf("%s, 数据[%s]", err, currentTransform.data.String())
+						customWC.listInMemory.Delete(currentTransform.id)
+						customWC.cntList.Add(-1)
+						customWC.audioFilesInMemory.Delete(currentTransform.data.PathAudioFile)
 						continue
 					}
 

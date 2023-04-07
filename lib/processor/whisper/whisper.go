@@ -2,6 +2,8 @@ package whisper
 
 import (
 	"bufio"
+	"bytes"
+	"fmt"
 	"go.uber.org/zap"
 	"io"
 	"os/exec"
@@ -93,6 +95,52 @@ func (customW *Whisper) LoadGraphics() error {
 		customW.graphics = graphics[1:]
 	} else {
 		customW.log().Warnf("未检测到相关显卡, 指令: %s", currentCMD.String())
+	}
+	return nil
+}
+
+type TransformParams struct {
+	NumThreads     int    // 线程数量
+	NumProcessors  int    // 处理器数量
+	GraphicAdapter string // 显卡
+	PathModel      string // 模型
+	PathAudioFile  string // 音频文件
+	Language       string // 音频源语种
+}
+
+func (customW *Whisper) Transform(param *TransformParams) error {
+	if err := customW.cfg.Validate(); err != nil {
+		customW.log().Errorf("配置验证失败, 错误: %s", err)
+		return err
+	}
+	if param.Language == "" {
+		param.Language = "en"
+	}
+	var args []string
+	args = append(args, "-osrt")
+	if param.GraphicAdapter != "" {
+		args = append(args, "-gpu", param.GraphicAdapter)
+	}
+	if param.NumThreads > 0 {
+		args = append(args, "-t", fmt.Sprintf("%d", param.NumThreads))
+	}
+	if param.NumProcessors > 0 {
+		args = append(args, "-t", fmt.Sprintf("%d", param.NumProcessors))
+	}
+	args = append(args, "-l", param.Language)
+	args = append(args, "-m", param.PathModel)
+	args = append(args, "-f", param.PathAudioFile)
+
+	currentCMD := exec.Command(customW.cfg.CmdPath, args...)
+	var stderr bytes.Buffer
+	currentCMD.Stderr = &stderr
+
+	if err := currentCMD.Start(); err != nil {
+		customW.log().Errorf("转换失败, 错误: %s, 指令: %s", err, currentCMD.String())
+		return err
+	}
+	if err := currentCMD.Wait(); err != nil {
+		customW.log().Errorf("转换失败, 错误: %s(%s), 指令: %s", err, stderr.String(), currentCMD.String())
 	}
 	return nil
 }

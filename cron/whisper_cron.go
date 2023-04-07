@@ -131,7 +131,7 @@ func (customWC *WhisperCron) Run(ctx context.Context, fnCancel context.CancelFun
 }
 
 func (customWC *WhisperCron) Close() {
-	fmt.Println("WhisperCron exit")
+	fmt.Println("WhisperCron退出")
 }
 
 func (customWC *WhisperCron) jobTransform() {

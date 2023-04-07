@@ -7,11 +7,12 @@ import (
 	"titmouse/cfg"
 	"titmouse/cron"
 	"titmouse/lib/log"
+	"titmouse/lib/processor/nohup"
 	"titmouse/lib/processor/whisper"
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, _ := context.WithCancel(context.Background())
 	if err := install(); err != nil {
 		panic(err)
 	}
@@ -29,9 +30,7 @@ func main() {
 		panic(err)
 	}
 
-	go func() { cron.ApiWhisperCron().Run(ctx, nil) }()
-
-	gui_windows.ApiGuiWindows().Run(ctx, nil)
+	nohup.NewResident(ctx, cron.ApiWhisperCron(), gui_windows.ApiGuiWindows())
 }
 
 func install() error {

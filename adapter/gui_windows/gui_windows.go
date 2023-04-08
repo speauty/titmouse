@@ -56,8 +56,9 @@ type GuiWindows struct {
 	ptrNumThreads    *walk.LineEdit
 	ptrNumProcessors *walk.LineEdit
 
-	ptrBtnCmdFile  *walk.PushButton
-	ptrEchoCmdFile *walk.TextLabel
+	ptrBtnCmdFile           *walk.PushButton
+	ptrEchoCmdFile          *walk.TextLabel
+	ptrFlagCacheWhisperData *walk.CheckBox
 
 	chanMsg   chan string
 	ptrOutput *walk.ListBox

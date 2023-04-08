@@ -47,6 +47,17 @@ func (customCR CfgRepository) ActionSetWhisperCfg(whisperCfg *whisper.Cfg) error
 	return customCR.whisperClient.SetCfg(whisperCfg)
 }
 
+func (customCR CfgRepository) ActionGetFlagCacheWhisperData() bool {
+	return cfg.Api().FlagCacheWhisperData
+}
+
+func (customCR CfgRepository) ActionSetFlagCacheWhisperData(flag bool) {
+	defer func() {
+		_ = customCR.ActionSync()
+	}()
+	cfg.Api().FlagCacheWhisperData = flag
+}
+
 // ActionSync 同步配置
 func (customCR CfgRepository) ActionSync() error {
 	return cfg.Api().Store()

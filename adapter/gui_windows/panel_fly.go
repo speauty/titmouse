@@ -129,6 +129,15 @@ func (customGW *GuiWindows) panelFlyBuilder() Widget {
 					HSpacer{},
 				},
 			},
+			/*Composite{
+				Layout: HBox{MarginsZero: true},
+				Children: []Widget{
+					CheckBox{AssignTo: &customGW.ptrFlagCacheWhisperData, Text: "是否缓存未处理完的任务[临时]", Checked: repository.ApiCfg().ActionGetFlagCacheWhisperData(), OnCheckedChanged: func() {
+						repository.ApiCfg().ActionSetFlagCacheWhisperData(customGW.ptrFlagCacheWhisperData.Checked())
+					}},
+					HSpacer{},
+				},
+			},*/
 			VSeparator{MinSize: Size{Height: 10}, MaxSize: Size{Height: 10}},
 			Composite{
 				Layout: HBox{MarginsZero: true},

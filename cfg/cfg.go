@@ -14,11 +14,13 @@ func Api() *Cfg {
 	onceCfg.Do(func() {
 		apiCfg = new(Cfg)
 		apiCfg.WhisperCfg = new(whisper.Cfg).Default()
+		apiCfg.FlagCacheWhisperData = true
 	})
 	return apiCfg
 }
 
 type Cfg struct {
-	FlagInstalled bool
-	WhisperCfg    *whisper.Cfg
+	FlagInstalled        bool
+	FlagCacheWhisperData bool
+	WhisperCfg           *whisper.Cfg
 }

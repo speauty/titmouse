@@ -15,6 +15,7 @@ import (
 	"titmouse/lib/processor/whisper"
 	"titmouse/lib/storage/single_file"
 	"titmouse/model"
+	"titmouse/repository"
 )
 
 var (
@@ -199,6 +200,9 @@ func (customWC *WhisperCron) init() {
 }
 
 func (customWC *WhisperCron) recoverListInMemory() {
+	if repository.ApiCfg().ActionGetFlagCacheWhisperData() == false {
+		return
+	}
 	waitList := new(WhisperDataList).GetLastData()
 	for _, data := range waitList {
 		customWC.chanMsg <- fmt.Sprintf("恢复上次任务(%s)", data.Data.PathAudioFile)
@@ -207,6 +211,9 @@ func (customWC *WhisperCron) recoverListInMemory() {
 }
 
 func (customWC *WhisperCron) storeListInMemory() {
+	if repository.ApiCfg().ActionGetFlagCacheWhisperData() == false {
+		return
+	}
 	waitList := new(WhisperDataList)
 	customWC.listInMemory.Range(func(idx, val any) bool {
 		tmpWhisperData := val.(*WhisperData)

@@ -7,7 +7,7 @@ type Cfg struct {
 
 func (customCfg *Cfg) Default() *Cfg {
 	return &Cfg{
-		InfoFile:  "info.log",
-		ErrorFile: "err.log",
+		InfoFile:  "logs/info.log",
+		ErrorFile: "logs/err.log",
 	}
 }

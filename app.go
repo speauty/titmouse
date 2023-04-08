@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"titmouse/adapter/gui_windows"
 	"titmouse/cfg"
@@ -34,7 +35,14 @@ func main() {
 }
 
 func install() error {
-	if _, err := os.Stat(cfg.Api().GetFilename()); err != nil {
+	fd, err := os.Stat("logs")
+	if err != nil || (fd != nil && !fd.IsDir()) {
+		if err = os.Mkdir("logs", os.ModePerm); err != nil {
+			return fmt.Errorf("创建日志目录失败(如果存在相应logs文件, 请手动处理), 错误: %s", err)
+		}
+	}
+
+	if _, err = os.Stat(cfg.Api().GetFilename()); err != nil {
 		return cfg.Api().Store()
 	}
 	return nil

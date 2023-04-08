@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang-module/carbon"
+	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -12,6 +13,7 @@ import (
 	"sync/atomic"
 	"titmouse/lib/log"
 	"titmouse/lib/processor/whisper"
+	"titmouse/lib/storage/single_file"
 	"titmouse/model"
 )
 
@@ -26,25 +28,6 @@ func ApiWhisperCron() *WhisperCron {
 		apiWhisperCron.init()
 	})
 	return apiWhisperCron
-}
-
-type WhisperData struct {
-	id                 string           // 数据中的id
-	data               *model.TaskModel // 数据(已校验过的, 否则会出现异常)
-	flagIsTransforming bool             // 是否正在转换
-	pushedAt           carbon.Carbon
-	transformedAt      carbon.Carbon
-}
-
-func (customWD *WhisperData) toWhisperTransformParams() *whisper.TransformParams {
-	return &whisper.TransformParams{
-		NumThreads:     customWD.data.NumThreads,
-		NumProcessors:  customWD.data.NumProcessors,
-		GraphicAdapter: customWD.data.GraphicAdapter,
-		PathModel:      customWD.data.PathModel,
-		PathAudioFile:  customWD.data.PathAudioFile,
-		Language:       customWD.data.Language,
-	}
 }
 
 type WhisperCron struct {
@@ -86,14 +69,14 @@ func (customWC *WhisperCron) GetListInMemory() []string {
 	var results []string
 	customWC.listInMemory.Range(func(idx, value any) bool {
 		tmpData := value.(*WhisperData)
-		tmpStr := fmt.Sprintf("排队中(%ds)", carbon.Now().DiffAbsInSeconds(tmpData.pushedAt))
-		if tmpData.flagIsTransforming {
-			tmpStr = fmt.Sprintf("转换中(%ds)", carbon.Now().DiffAbsInSeconds(tmpData.transformedAt))
+		tmpStr := fmt.Sprintf("排队中(%ds)", carbon.Now().DiffAbsInSeconds(tmpData.PushedAt))
+		if tmpData.FlagIsTransforming {
+			tmpStr = fmt.Sprintf("转换中(%ds)", carbon.Now().DiffAbsInSeconds(tmpData.TransformedAt))
 		}
 
 		results = append(results, fmt.Sprintf(
 			"%s, 状态: %s",
-			filepath.Base(tmpData.data.PathAudioFile), tmpStr,
+			filepath.Base(tmpData.Data.PathAudioFile), tmpStr,
 		))
 		return true
 	})
@@ -112,7 +95,7 @@ func (customWC *WhisperCron) Push(task *model.TaskModel) error {
 	if customWC.maxChanTransform <= numWait+customWC.maxCoroutine {
 		return errors.New(fmt.Sprintf("当前任务过多(数量: %d), 请稍后推送", numWait))
 	}
-	currentData := &WhisperData{id: task.Id, data: task, flagIsTransforming: false, pushedAt: carbon.Now()}
+	currentData := &WhisperData{Id: task.Id, Data: task, FlagIsTransforming: false, PushedAt: carbon.Now()}
 	customWC.listInMemory.Store(task.Id, currentData)
 	customWC.cntWait.Add(1)
 	customWC.cntList.Add(1)
@@ -128,10 +111,12 @@ func (customWC *WhisperCron) Run(ctx context.Context, fnCancel context.CancelFun
 
 	customWC.jobTransform()
 	customWC.jobMsgRedirect()
+
+	customWC.recoverListInMemory()
 }
 
 func (customWC *WhisperCron) Close() {
-	fmt.Println("WhisperCron退出")
+	customWC.storeListInMemory()
 }
 
 func (customWC *WhisperCron) jobTransform() {
@@ -153,27 +138,27 @@ func (customWC *WhisperCron) jobTransform() {
 						runtime.Goexit()
 					}
 					customWC.cntWait.Add(-1)
-					chanMsg <- fmt.Sprintf("正在处理, 当前数据[%s]", currentTransform.data)
+					chanMsg <- fmt.Sprintf("正在处理, 当前数据[%s]", currentTransform.Data)
 
-					currentTransform.flagIsTransforming = true
-					currentTransform.transformedAt = carbon.Now()
-					customWC.listInMemory.LoadOrStore(currentTransform.id, currentTransform)
+					currentTransform.FlagIsTransforming = true
+					currentTransform.TransformedAt = carbon.Now()
+					customWC.listInMemory.LoadOrStore(currentTransform.Id, currentTransform)
 
 					if err := apiWhisper.Transform(currentTransform.toWhisperTransformParams()); err != nil {
-						currentLog.Errorf("%s, 数据[%s]", currentTransform.data.String(), err)
-						chanMsg <- fmt.Sprintf("%s, 数据[%s]", err, currentTransform.data.String())
-						customWC.listInMemory.Delete(currentTransform.id)
+						currentLog.Errorf("%s, 数据[%s]", currentTransform.Data.String(), err)
+						chanMsg <- fmt.Sprintf("%s, 数据[%s]", err, currentTransform.Data.String())
+						customWC.listInMemory.Delete(currentTransform.Id)
 						customWC.cntList.Add(-1)
-						customWC.audioFilesInMemory.Delete(currentTransform.data.PathAudioFile)
+						customWC.audioFilesInMemory.Delete(currentTransform.Data.PathAudioFile)
 						continue
 					}
 
-					currentLog.Infof("转换成功, 当前数据[%s], 耗时: %d", currentTransform.data, carbon.Now().DiffAbsInSeconds(timeStarted))
-					chanMsg <- fmt.Sprintf("转换成功, 耗时: %d, 当前数据[%s]", carbon.Now().DiffAbsInSeconds(timeStarted), currentTransform.data)
+					currentLog.Infof("转换成功, 当前数据[%s], 耗时: %d", currentTransform.Data, carbon.Now().DiffAbsInSeconds(timeStarted))
+					chanMsg <- fmt.Sprintf("转换成功, 耗时: %d, 当前数据[%s]", carbon.Now().DiffAbsInSeconds(timeStarted), currentTransform.Data)
 
-					customWC.listInMemory.Delete(currentTransform.id)
+					customWC.listInMemory.Delete(currentTransform.Id)
 					customWC.cntList.Add(-1)
-					customWC.audioFilesInMemory.Delete(currentTransform.data.PathAudioFile)
+					customWC.audioFilesInMemory.Delete(currentTransform.Data.PathAudioFile)
 				}
 			}
 		}(customWC.ctx, i, customWC.chanTransform, customWC.chanMsg)
@@ -213,6 +198,73 @@ func (customWC *WhisperCron) init() {
 	customWC.timeStarted = carbon.Now()
 }
 
+func (customWC *WhisperCron) recoverListInMemory() {
+	waitList := new(WhisperDataList).GetLastData()
+	for _, data := range waitList {
+		customWC.chanMsg <- fmt.Sprintf("恢复上次任务(%s)", data.Data.PathAudioFile)
+		_ = customWC.Push(data.Data)
+	}
+}
+
+func (customWC *WhisperCron) storeListInMemory() {
+	waitList := new(WhisperDataList)
+	customWC.listInMemory.Range(func(idx, val any) bool {
+		tmpWhisperData := val.(*WhisperData)
+		tmpWhisperData.FlagIsTransforming = false
+		waitList.Data = append(waitList.Data, tmpWhisperData)
+		return true
+	})
+	if len(waitList.Data) > 0 {
+		_ = waitList.Store()
+	}
+}
+
 func (customWC *WhisperCron) log() *log.Log {
 	return log.Api()
+}
+
+type WhisperData struct {
+	Id                 string           // 数据中的id
+	Data               *model.TaskModel // 数据(已校验过的, 否则会出现异常)
+	FlagIsTransforming bool             // 是否正在转换
+	PushedAt           carbon.Carbon
+	TransformedAt      carbon.Carbon
+}
+
+func (customWD *WhisperData) toWhisperTransformParams() *whisper.TransformParams {
+	return &whisper.TransformParams{
+		NumThreads:     customWD.Data.NumThreads,
+		NumProcessors:  customWD.Data.NumProcessors,
+		GraphicAdapter: customWD.Data.GraphicAdapter,
+		PathModel:      customWD.Data.PathModel,
+		PathAudioFile:  customWD.Data.PathAudioFile,
+		Language:       customWD.Data.Language,
+	}
+}
+
+type WhisperDataList struct {
+	Data []*WhisperData
+}
+
+func (customWDL *WhisperDataList) GetLastData() []*WhisperData {
+	if _, err := os.Stat(customWDL.GetFilename()); err != nil {
+		return nil
+	}
+	if err := customWDL.Load(); err != nil {
+		return nil
+	}
+	_ = os.Remove(customWDL.GetFilename())
+	return customWDL.Data
+}
+
+func (customWDL *WhisperDataList) GetFilename() string {
+	return "last.data"
+}
+
+func (customWDL *WhisperDataList) Store() error {
+	return single_file.Store(customWDL)
+}
+
+func (customWDL *WhisperDataList) Load() error {
+	return single_file.Load(customWDL)
 }

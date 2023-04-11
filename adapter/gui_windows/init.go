@@ -3,12 +3,14 @@ package gui_windows
 import (
 	. "github.com/lxn/walk/declarative"
 	"titmouse/cron"
+	"titmouse/lib/processor/whisper"
 	"titmouse/repository"
 )
 
 func (customGW *GuiWindows) initProps() {
+
 	customGW.graphics = repository.ApiCfg().ActionGetGraphics()
-	customGW.languages = []string{"en"}
+	customGW.languages = whisper.LanguagesSupported
 
 	customGW.chanMsg = make(chan string, 20)
 	cron.ApiWhisperCron().SetChanMsgRedirect(customGW.chanMsg)

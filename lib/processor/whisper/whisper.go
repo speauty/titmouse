@@ -116,8 +116,11 @@ func (customW *Whisper) Transform(param *TransformParams) error {
 		return err
 	}
 	if param.Language == "" {
-		param.Language = "en"
+		param.Language = "英文"
 	}
+
+	param.Language = languagesMap[param.Language]
+
 	var args []string
 	args = append(args, "-osrt")
 	if param.GraphicAdapter != "" {
@@ -129,6 +132,7 @@ func (customW *Whisper) Transform(param *TransformParams) error {
 	if param.NumProcessors > 0 {
 		args = append(args, "-t", fmt.Sprintf("%d", param.NumProcessors))
 	}
+
 	args = append(args, "-l", param.Language)
 	args = append(args, "-m", param.PathModel)
 	args = append(args, "-f", param.PathAudioFile)

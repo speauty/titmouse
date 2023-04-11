@@ -142,11 +142,12 @@ func (customW *Whisper) Transform(param *TransformParams) error {
 
 	if err := currentCMD.Start(); err != nil {
 		customW.log().Errorf("转换失败, 错误: %s, 指令: %s", err, currentCMD.String())
-		return err
+		return fmt.Errorf("转换失败, 错误: %s, 指令: %s", err, currentCMD.String())
 	}
 
 	if err := currentCMD.Wait(); err != nil {
 		customW.log().Errorf("转换失败, 错误: %s(%s), 指令: %s", err, stderr.String(), currentCMD.String())
+		return fmt.Errorf("转换失败, 错误: %s(%s), 指令: %s", err, stderr.String(), currentCMD.String())
 	}
 	return nil
 }
